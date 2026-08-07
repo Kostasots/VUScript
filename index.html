@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>VU Review Log</title>
+<style>
+  :root{
+    --bg-deep:#0B1F2E;
+    --bg-panel:#12293C;
+    --bg-panel-2:#1B3A52;
+    --bg-panel-3:#0F2434;
+    --text-primary:#F4F7FA;
+    --text-muted:#8FA6B8;
+    --text-dim:#5D7A8E;
+    --accent-green:#3FA34D;
+    --accent-green-dim:#20401f;
+    --accent-amber:#E8A33D;
+    --accent-amber-dim:#3d2e12;
+    --accent-red:#D6455A;
+    --accent-red-dim:#3a1620;
+    --accent-yellow:#E8D93D;
+    --accent-yellow-dim:#3d3a12;
+    --accent-blue:#4C8FD1;
+    --accent-blue-dim:#152d42;
+    --border:#24445E;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--bg-deep);
+    color:var(--text-primary);
+    font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:900px; margin:0 auto; padding:18px 16px 60px;}
+
+  /* Header */
+  .header{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom:16px; padding-bottom:14px; border-bottom:2px solid var(--border);
+  }
+  .header h1{
+    font-size:20px; margin:0; letter-spacing:0.14em; text-transform:uppercase;
+    font-weight:800; font-stretch:condensed;
+  }
+  .header .sub{color:var(--text-muted); font-size:12px; letter-spacing:0.08em; text-transform:uppercase; margin-top:2px;}
+  .header-icon{font-size:22px;}
+
+  /* Panels */
+  .panel{
+    background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:16px; margin-bottom:14px;
+  }
+  .panel-title{
+    font-size:12px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-muted);
+    font-weight:700; margin:0 0 12px 0; display:flex; align-items:center; gap:8px;
+  }
+  .row{display:flex; gap:10px; flex-wrap:wrap;}
+  .scope-toggle{display:flex; gap:8px; margin-bottom:14px;}
+  .scope-btn{
+    flex:1; text-align:center; padding:10px 8px; border-radius:9px; border:1px solid var(--border);
+    background:var(--bg-panel-3); color:var(--text-muted); font-size:13px; font-weight:800;
+    text-transform:uppercase; letter-spacing:0.04em; cursor:pointer;
+  }
+  .scope-btn.selected{border-color:var(--accent-blue); background:var(--accent-blue-dim); color:#EAF3FC;}
+  .scope-toggle-sm{margin-bottom:8px;}
+  .scope-toggle-sm .scope-btn{padding:7px 6px; font-size:11px;}
+  .field{flex:1; min-width:140px;}
+  .field label{display:block; font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:5px;}
+  select, input[type=text], input[type=email], textarea{
+    width:100%; background:var(--bg-panel-3); border:1px solid var(--border); color:var(--text-primary);
+    padding:11px 10px; border-radius:9px; font-size:16px; font-family:inherit;
+  }
+  select:focus, input:focus, textarea:focus{outline:2px solid var(--accent-blue); outline-offset:1px;}
+  textarea{resize:vertical; min-height:44px;}
+
+  .btn{
+    border:none; border-radius:10px; padding:12px 16px; font-size:15px; font-weight:700;
+    cursor:pointer; color:var(--text-primary); text-align:center; letter-spacing:0.02em;
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    min-height:46px;
+  }
+  .btn:active{transform:scale(0.98);}
+  .btn-blue{background:var(--accent-blue);}
+  .btn-ghost{background:var(--bg-panel-2); color:var(--text-primary); border:1px solid var(--border);}
+  .btn-green{background:var(--accent-green);}
+  .btn-red{background:var(--accent-red);}
+  .btn-block{width:100%;}
+  .btn:disabled{opacity:0.4; cursor:not-allowed;}
+
+  /* New referral launcher */
+  .new-referral-btn{
+    width:100%; background:linear-gradient(135deg, var(--accent-blue), #2f6aa8);
+    border:none; border-radius:var(--radius); color:#fff; padding:18px;
+    font-size:16px; font-weight:800; letter-spacing:0.05em; text-transform:uppercase;
+    cursor:pointer; margin-bottom:14px; display:flex; align-items:center; justify-content:center; gap:10px;
+  }
+  .new-referral-btn:active{transform:scale(0.99);}
+
+  /* Wizard */
+  .wizard-overlay{
+    position:fixed; inset:0; background:rgba(4,12,18,0.88); z-index:50;
+    display:flex; align-items:flex-end; justify-content:center;
+  }
+  @media(min-width:640px){ .wizard-overlay{align-items:center;} }
+  .wizard{
+    background:var(--bg-panel); width:100%; max-width:640px; max-height:94vh; overflow-y:auto;
+    border-radius:20px 20px 0 0; border:1px solid var(--border); border-bottom:none;
+    display:flex; flex-direction:column;
+  }
+  @media(min-width:640px){ .wizard{border-radius:20px; border-bottom:1px solid var(--border);} }
+
+  .wizard-rail{
+    display:flex; gap:6px; padding:16px 16px 0 16px;
+  }
+  .rail-step{
+    flex:1; height:5px; border-radius:3px; background:var(--border);
+  }
+  .rail-step.done{background:var(--accent-blue);}
+  .rail-step.active{background:var(--accent-amber);}
+
+  .wizard-body{padding:20px;}
+  .step-eyebrow{
+    font-size:11px; color:var(--accent-amber); text-transform:uppercase; letter-spacing:0.14em;
+    font-weight:800; margin-bottom:6px;
+  }
+  .step-script{
+    font-style:italic; color:var(--text-muted); font-size:15px; margin:0 0 18px 0;
+    padding:10px 14px; background:var(--bg-panel-3); border-left:3px solid var(--accent-amber);
+    border-radius:0 8px 8px 0;
+  }
+  .script-readout{
+    background:var(--accent-blue-dim); border:2px solid var(--accent-blue); border-radius:12px;
+    padding:20px 18px; font-size:20px; line-height:1.55; font-weight:700; color:#EAF3FC;
+    font-style:italic;
+  }
+  .entry-script{
+    margin-top:9px; padding:9px 11px; background:var(--bg-panel-3); border-left:3px solid var(--accent-blue);
+    border-radius:0 8px 8px 0; font-size:13px; font-style:italic; color:#B9D3EA;
+  }
+  .choice-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .choice-grid.single{grid-template-columns:1fr;}
+  .choice-btn{
+    background:var(--bg-panel-3); border:2px solid var(--border); border-radius:12px;
+    padding:16px 12px; color:var(--text-primary); font-size:15px; font-weight:700;
+    cursor:pointer; text-align:center; min-height:56px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .choice-btn:active{transform:scale(0.98);}
+  .choice-btn.selected{border-color:var(--accent-blue); background:var(--accent-blue-dim);}
+  .choice-btn.opt-green.selected{border-color:var(--accent-green); background:var(--accent-green-dim); color:#8FE39B;}
+  .choice-btn.opt-amber.selected{border-color:var(--accent-amber); background:var(--accent-amber-dim); color:#F5C87A;}
+  .choice-btn.opt-red.selected{border-color:var(--accent-red); background:var(--accent-red-dim); color:#F19AA8;}
+  .choice-btn.opt-yellow.selected{border-color:var(--accent-yellow); background:var(--accent-yellow-dim); color:#F3E98F;}
+  .choice-btn.choice-disabled{opacity:0.4; cursor:not-allowed; border-style:dashed;}
+  .disabled-tag{font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:var(--accent-red); font-weight:800;}
+
+  .wizard-footer{
+    display:flex; gap:10px; padding:16px 20px; border-top:1px solid var(--border);
+    position:sticky; bottom:0; background:var(--bg-panel);
+  }
+
+  /* Log entries */
+  .entry{
+    background:var(--bg-panel); border:1px solid var(--border); border-radius:12px;
+    padding:14px; margin-bottom:10px;
+  }
+  .entry-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .entry-badge{
+    font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.06em;
+    padding:4px 9px; border-radius:20px; white-space:nowrap;
+  }
+  .badge-home{background:var(--accent-blue-dim); color:#9CC4EA;}
+  .badge-umpire{background:var(--bg-panel-2); color:var(--text-muted);}
+  .entry-title{font-weight:700; font-size:15px; margin:0 0 4px 0;}
+  .entry-detail{color:var(--text-muted); font-size:13px; line-height:1.5;}
+  .entry-outcome{
+    display:inline-block; margin-top:8px; font-size:12px; font-weight:800; padding:3px 9px;
+    border-radius:20px; text-transform:uppercase; letter-spacing:0.04em;
+  }
+  .outcome-green{background:var(--accent-green-dim); color:#8FE39B;}
+  .outcome-amber{background:var(--accent-amber-dim); color:#F5C87A;}
+  .outcome-red{background:var(--accent-red-dim); color:#F19AA8;}
+  .entry-delete{background:none; border:none; color:var(--text-dim); font-size:13px; cursor:pointer; padding:4px 6px;}
+
+  .empty-state{
+    text-align:center; padding:36px 20px; color:var(--text-dim); font-size:14px;
+  }
+
+  .settings-toggle{
+    background:none; border:none; color:var(--text-muted); font-size:12px; text-transform:uppercase;
+    letter-spacing:0.08em; cursor:pointer; padding:6px 0; display:flex; align-items:center; gap:6px;
+  }
+
+  .footer-actions{display:flex; gap:10px; margin-top:16px;}
+  .footer-actions .btn{flex:1;}
+
+  .team-manage-row{display:flex; gap:8px; margin-top:8px;}
+  .team-manage-row input{flex:1;}
+  .chip-list{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+  .chip{
+    background:var(--bg-panel-3); border:1px solid var(--border); border-radius:20px;
+    padding:5px 10px; font-size:12px; display:flex; align-items:center; gap:6px; color:var(--text-muted);
+  }
+  .chip button{background:none; border:none; color:var(--accent-red); cursor:pointer; font-size:13px; padding:0;}
+
+  .toast{
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    background:var(--accent-green); color:#062009; font-weight:700; font-size:13px;
+    padding:10px 18px; border-radius:20px; z-index:100; box-shadow:0 4px 20px rgba(0,0,0,0.4);
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+(function(){
+
+  // ---------- Static roster data ----------
+  const DEFAULT_CONFERENCES = {
+    "International \u2014 PAHF": ["Argentina","Barbados","Bermuda","Bolivia","Brazil","Canada","Chile","Costa Rica","Cuba","Dominican Republic","Ecuador","Guatemala","Guyana","Jamaica","Mexico","Panama","Paraguay","Peru","Puerto Rico","Trinidad and Tobago","United States","Uruguay","Venezuela"],
+    "NCAA D1 \u2014 America East": ["Albany","Bryant","Maine","New Hampshire","UMass Lowell","Vermont"],
+    "NCAA D1 \u2014 ACC": ["Boston College","California","Duke","Louisville","North Carolina","Stanford","Syracuse","Virginia","Wake Forest"],
+    "NCAA D1 \u2014 Atlantic 10": ["Davidson","La Salle","Lock Haven","Richmond","Saint Joseph's","Saint Louis","VCU"],
+    "NCAA D1 \u2014 Big East": ["Georgetown","Liberty","Old Dominion","Providence","Temple","UConn","Villanova"],
+    "NCAA D1 \u2014 Big Ten": ["Indiana","Iowa","Maryland","Michigan","Michigan State","Northwestern","Ohio State","Penn State","Rutgers"],
+    "NCAA D1 \u2014 CAA": ["Drexel","Fairfield","Hofstra","Monmouth","Northeastern","Towson","William & Mary"],
+    "NCAA D1 \u2014 Independents": ["Queens (Charlotte)"],
+    "NCAA D1 \u2014 Ivy League": ["Brown","Columbia","Cornell","Dartmouth","Harvard","Penn","Princeton","Yale"],
+    "NCAA D1 \u2014 MAC": ["Appalachian State","Ball State","Bellarmine","Central Michigan","James Madison","Kent State","Longwood","Miami (OH)","Ohio","UMass"],
+    "NCAA D1 \u2014 MPSF": ["Delaware","UC Davis"],
+    "NCAA D1 \u2014 NEC": ["Long Island University","Mercyhurst","Merrimack","New Haven","Quinnipiac","Rider","Sacred Heart","Saint Francis (PA)","Stonehill","Wagner"],
+    "NCAA D1 \u2014 Patriot League": ["American","Boston University","Bucknell","Colgate","Holy Cross","Lafayette","Lehigh"]
+  };
+
+  const RESTART_OPTIONS = ["Bully","PC","16","Free hit to defense","Free hit to attack","Sideline ball","Long corner","Other"];
+  const PENALTY_OPTIONS = [
+    {key:"none", label:"No Personal Penalty", cls:""},
+    {key:"yellow", label:"Yellow Card \u2013 10 min", cls:"opt-yellow"},
+    {key:"red", label:"Red Card", cls:"opt-red"}
+  ];
+  const UMPIRE_SITUATIONS = ["Serious Misconduct","Goal / No Goal","Penalty Stroke / No Penalty Stroke"];
+  const QUARTER_OPTIONS = ["Q1","Q2","Q3","Q4","OT","SO"];
+  const DECISION_OPTIONS = [
+    {key:"no_change", label:"No clear reason to change", cls:"opt-green"},
+    {key:"advice", label:"I have advice for you", cls:"opt-amber"},
+    {key:"no_advice", label:"No advice possible", cls:"opt-red"}
+  ];
+
+  // ---------- State ----------
+  let state = {
+    settings: { supervisorEmail:"", customTeams:[] },
+    game: { home:"", away:"", label:"", date: new Date().toISOString().slice(0,10), homeScope:"ncaa", awayScope:"ncaa", referralStatus: { home:false, away:false } },
+    entries: [],
+    settingsOpen: false,
+    wizard: null // {step, data}
+  };
+
+  const STORAGE_KEY = 'vu-settings';
+
+  async function loadSettings(){
+    try{
+      const res = await window.storage.get(STORAGE_KEY, false);
+      if(res && res.value){
+        const parsed = JSON.parse(res.value);
+        state.settings = Object.assign({supervisorEmail:"", customTeams:[]}, parsed);
+      }
+    }catch(e){ /* no saved settings yet */ }
+    render();
+  }
+
+  async function saveSettings(){
+    try{
+      await window.storage.set(STORAGE_KEY, JSON.stringify(state.settings), false);
+    }catch(e){ console.error('settings save failed', e); }
+  }
+
+  function allTeams(){
+    let list = [];
+    Object.values(DEFAULT_CONFERENCES).forEach(arr => list = list.concat(arr));
+    return list.concat(state.settings.customTeams).sort((a,b)=>a.localeCompare(b));
+  }
+
+  function esc(s){
+    return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  // ---------- Rendering ----------
+  const app = document.getElementById('app');
+
+  function render(){
+    app.innerHTML = `
+      ${header()}
+      ${settingsPanel()}
+      ${gameInfoPanel()}
+      ${state.game.home || state.game.away ? newReferralButton() : ''}
+      ${logSection()}
+      ${state.entries.length ? footerActions() : ''}
+      ${state.wizard ? wizardOverlay() : ''}
+    `;
+    attachHandlers();
+  }
+
+  function header(){
+    return `
+      <div class="header">
+        <div>
+          <h1>VU Review Log</h1>
+          <div class="sub">Video Umpire &middot; Referral Tracking</div>
+        </div>
+        <div class="header-icon">&#127946;</div>
+      </div>
+    `;
+  }
+
+  function settingsPanel(){
+    return `
+      <div class="panel">
+        <button class="settings-toggle" data-action="toggle-settings">
+          ${state.settingsOpen ? '&#9660;' : '&#9654;'} Roster &amp; Supervisor Settings
+        </button>
+        ${state.settingsOpen ? `
+          <div style="margin-top:12px;">
+            <div class="field">
+              <label>Supervisor / Umpire Manager Email</label>
+              <input type="email" id="supervisorEmail" placeholder="name@example.com" value="${esc(state.settings.supervisorEmail)}">
+            </div>
+            <div class="field" style="margin-top:12px;">
+              <label>Add Tournament / Custom Team</label>
+              <div class="team-manage-row">
+                <input type="text" id="customTeamInput" placeholder="e.g. Argentina, Club XYZ">
+                <button class="btn btn-blue" data-action="add-team" style="min-height:44px; padding:10px 16px;">Add</button>
+              </div>
+              ${state.settings.customTeams.length ? `
+                <div class="chip-list">
+                  ${state.settings.customTeams.map((t,i)=>`
+                    <div class="chip">${esc(t)} <button data-action="remove-team" data-index="${i}">&times;</button></div>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  function teamOptions(selected, scope){
+    let opts = `<option value="">Select team&hellip;</option>`;
+    Object.entries(DEFAULT_CONFERENCES).forEach(([conf, teams])=>{
+      const isIntl = conf.indexOf('International') === 0;
+      if(scope === 'pahf' && !isIntl) return;
+      if(scope === 'ncaa' && isIntl) return;
+      opts += `<optgroup label="${esc(conf)}">`;
+      teams.forEach(t => opts += `<option value="${esc(t)}" ${t===selected?'selected':''}>${esc(t)}</option>`);
+      opts += `</optgroup>`;
+    });
+    if(state.settings.customTeams.length){
+      opts += `<optgroup label="Tournament / Custom">`;
+      state.settings.customTeams.forEach(t => opts += `<option value="${esc(t)}" ${t===selected?'selected':''}>${esc(t)}</option>`);
+      opts += `</optgroup>`;
+    }
+    return opts;
+  }
+
+  function teamFieldHTML(side){
+    const val = state.game[side];
+    const scope = state.game[side+'Scope'];
+    if(scope === 'other'){
+      return `<input type="text" id="${side}TeamText" placeholder="Team name" value="${esc(val)}">`;
+    }
+    return `<select id="${side}Team">${teamOptions(val, scope)}</select>`;
+  }
+
+  function scopeToggleHTML(side){
+    const scope = state.game[side+'Scope'];
+    return `
+      <div class="scope-toggle scope-toggle-sm">
+        <div class="scope-btn ${scope==='pahf'?'selected':''}" data-action="set-scope" data-side="${side}" data-value="pahf">PAHF</div>
+        <div class="scope-btn ${scope==='ncaa'?'selected':''}" data-action="set-scope" data-side="${side}" data-value="ncaa">NCAA D1</div>
+        <div class="scope-btn ${scope==='other'?'selected':''}" data-action="set-scope" data-side="${side}" data-value="other">Other</div>
+      </div>
+    `;
+  }
+
+  function gameInfoPanel(){
+    return `
+      <div class="panel">
+        <p class="panel-title">Match</p>
+        <div class="field" style="margin-bottom:14px;">
+          <label>Home / Team A</label>
+          ${scopeToggleHTML('home')}
+          ${teamFieldHTML('home')}
+        </div>
+        <div class="field">
+          <label>Away / Team B</label>
+          ${scopeToggleHTML('away')}
+          ${teamFieldHTML('away')}
+        </div>
+        <div class="row" style="margin-top:10px;">
+          <div class="field">
+            <label>Event / Tournament Label</label>
+            <input type="text" id="gameLabel" placeholder="e.g. Big East Championship" value="${esc(state.game.label)}">
+          </div>
+          <div class="field" style="max-width:160px;">
+            <label>Date</label>
+            <input type="text" id="gameDate" value="${esc(state.game.date)}" placeholder="YYYY-MM-DD">
+          </div>
+        </div>
+        ${(state.game.home || state.game.away) ? `
+          <div class="chip-list" style="margin-top:12px; align-items:center;">
+            <div class="chip" style="${state.game.referralStatus.home ? 'border-color:var(--accent-red); color:#F19AA8;' : 'border-color:var(--accent-green); color:#8FE39B;'}">
+              ${esc(state.game.home)||'Home'}: ${state.game.referralStatus.home ? 'Referral Lost' : 'Referral Available'}
+            </div>
+            <div class="chip" style="${state.game.referralStatus.away ? 'border-color:var(--accent-red); color:#F19AA8;' : 'border-color:var(--accent-green); color:#8FE39B;'}">
+              ${esc(state.game.away)||'Away'}: ${state.game.referralStatus.away ? 'Referral Lost' : 'Referral Available'}
+            </div>
+          </div>
+          <button class="btn btn-ghost" data-action="reset-shootout" style="margin-top:10px; width:100%; font-size:13px; min-height:40px;">
+            &#128681; Shootout Reached &mdash; Each Team Gets One Referral
+          </button>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  function newReferralButton(){
+    return `
+      <button class="new-referral-btn" data-action="start-wizard">
+        &#43; New Referral
+      </button>
+    `;
+  }
+
+  function logSection(){
+    if(!state.entries.length){
+      return `<div class="empty-state">No referrals logged yet.<br>Start one above when a review begins.</div>`;
+    }
+    return state.entries.map((e, idx)=>{
+      const outcome = DECISION_OPTIONS.find(d=>d.key===e.decision);
+      const outcomeCls = outcome ? (outcome.key==='no_change'?'outcome-green':outcome.key==='advice'?'outcome-amber':'outcome-red') : '';
+      return `
+        <div class="entry">
+          <div class="entry-top">
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <span class="entry-badge ${e.type==='umpire'?'badge-umpire':'badge-home'}">${e.type==='umpire' ? 'Umpire Referral' : (e.referrer==='home' ? esc(state.game.home||'Home') : esc(state.game.away||'Away')) + ' Referral'}</span>
+              ${e.quarter ? `<span class="entry-badge badge-umpire">${esc(e.quarter)}${e.clockTime ? ' &middot; ' + esc(e.clockTime) : ''}</span>` : ''}
+            </div>
+            <button class="entry-delete" data-action="delete-entry" data-index="${idx}">Remove</button>
+          </div>
+          <p class="entry-title" style="margin-top:8px;">${esc(e.question) || '(no question recorded)'}</p>
+          <div class="entry-detail">
+            ${e.onFieldDecision ? `On-field: ${esc(e.onFieldDecision)}<br>` : ''}
+            ${e.vuFinding ? `VU Finding: ${esc(e.vuFinding)}<br>` : ''}
+            Restart: ${esc(e.restart) || '&mdash;'}
+            ${e.penalty && e.penalty !== 'none' ? `<br>Personal penalty: <strong>${e.penalty === 'yellow' ? 'Yellow Card (10 min)' : 'Red Card'}</strong>` : ''}
+            ${e.type==='team' ? `<br>Result: <strong>${e.keepLose === 'keep' ? 'Team KEEPS referral' : e.keepLose === 'lose' ? 'Team LOSES referral' : '&mdash;'}</strong>` : ''}
+          </div>
+          ${outcome ? `<span class="entry-outcome ${outcomeCls}">${outcome.label}</span>` : ''}
+          ${e.tookAdvice !== null && e.tookAdvice !== undefined ? `<span class="entry-outcome ${e.tookAdvice ? 'outcome-green' : 'outcome-red'}">${e.tookAdvice ? 'Umpire took VU advice' : 'Umpire made own decision'}</span>` : ''}
+          ${e.scriptText ? `<div class="entry-script">&ldquo;${esc(e.scriptText)}&rdquo;</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function footerActions(){
+    return `
+      <div class="footer-actions">
+        <button class="btn btn-ghost" data-action="clear-log">Clear Log</button>
+        <button class="btn btn-green" data-action="email-log">&#9993; Email Supervisor</button>
+      </div>
+    `;
+  }
+
+  // ---------- Wizard ----------
+  function newWizardData(){
+    return { type:'', referrer:'', quarter:'', clockTime:'', question:'', onFieldDecision:'', vuFinding:'', decision:'', restart:'', restartOther:'', penalty:'none', keepLose:'', tookAdvice:null };
+  }
+
+  function wizardSteps(data){
+    // Steps depend on whether it's a team or umpire referral
+    const steps = ['type'];
+    if(data.type === 'team'){
+      steps.push('when','question','onfield','vufinding','decision','restart','penalty','keeplose','script');
+    } else if(data.type === 'umpire'){
+      steps.push('when','situation','vufinding','decision','restart','penalty','script');
+    }
+    return steps;
+  }
+
+  function buildScript(data){
+    const decisionPhrase = {
+      no_change: "There's no clear reason to change your decision.",
+      advice: "I have advice for you.",
+      no_advice: "No advice is possible."
+    }[data.decision] || '';
+
+    const parts = [decisionPhrase];
+
+    if(data.vuFinding){
+      let finding = data.vuFinding.trim();
+      const words = finding.split(/\s+/).filter(Boolean);
+      const looksLikeSentence = /^(there|the|no|yes|it|he|she|they|on|off|during|after|before|when|i\s|we\s)\b/i.test(finding);
+      if(words.length > 0 && words.length <= 3 && !looksLikeSentence){
+        const article = /^[aeiou]/i.test(words[0]) ? 'an' : 'a';
+        finding = `There was ${article} ${finding.charAt(0).toLowerCase()}${finding.slice(1)}`;
+      }
+      parts.push(finding.replace(/\.?$/, '.'));
+    }
+
+    if(data.penalty === 'yellow'){
+      parts.push(`Yellow card, ten minutes.`);
+    } else if(data.penalty === 'red'){
+      parts.push(`Red card.`);
+    }
+
+    if(data.restart){
+      parts.push(`Restart is a ${data.restart}.`);
+    }
+
+    if(data.type === 'team'){
+      const teamName = data.referrer === 'home' ? (state.game.home || 'Home') : (state.game.away || 'Away');
+      parts.push(`${teamName} ${data.keepLose === 'keep' ? 'KEEP' : 'LOSE'} their referral.`);
+    }
+
+    return parts.filter(Boolean).join(' ');
+  }
+
+  function wizardOverlay(){
+    const w = state.wizard;
+    const steps = wizardSteps(w.data);
+    const stepKey = steps[w.step];
+    const total = steps.length;
+
+    return `
+      <div class="wizard-overlay" data-action="overlay-bg">
+        <div class="wizard" onclick="event.stopPropagation()">
+          <div class="wizard-rail">
+            ${steps.map((s,i)=>`<div class="rail-step ${i<w.step?'done':i===w.step?'active':''}"></div>`).join('')}
+          </div>
+          <div class="wizard-body">
+            ${wizardStepContent(stepKey, w.data, w.step, total)}
+          </div>
+          <div class="wizard-footer">
+            ${w.step > 0 ? `<button class="btn btn-ghost" data-action="wizard-back">Back</button>` : `<button class="btn btn-ghost" data-action="wizard-cancel">Cancel</button>`}
+            <button class="btn btn-blue btn-block" data-action="wizard-next" ${canAdvance(stepKey,w.data)?'':'disabled'}>
+              ${w.step === total-1 ? 'Confirm & Save' : 'Next'}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function canAdvance(stepKey, data){
+    switch(stepKey){
+      case 'type': return !!data.type;
+      case 'when': return !!data.quarter;
+      case 'question': return true;
+      case 'situation': return !!data.question;
+      case 'onfield': return true;
+      case 'decision': return !!data.decision;
+      case 'restart': return !!data.restart;
+      case 'penalty': return true;
+      case 'keeplose': return !!data.keepLose;
+      case 'script': return true;
+      default: return true;
+    }
+  }
+
+  function wizardStepContent(stepKey, data, stepIndex, total){
+    const eyebrow = `<div class="step-eyebrow">Step ${stepIndex+1} of ${total}</div>`;
+
+    if(stepKey === 'type'){
+      const homeLost = state.game.referralStatus.home;
+      const awayLost = state.game.referralStatus.away;
+      return `
+        ${eyebrow}
+        <p class="step-script">&ldquo;Who's referral?&rdquo;</p>
+        <div class="choice-grid">
+          <div class="choice-btn ${data.referrer==='home'?'selected':''} ${homeLost?'choice-disabled':''}" ${homeLost ? '' : 'data-action="set-referrer" data-value="home"'}>${esc(state.game.home) || 'Home'}${homeLost ? '<br><span class=\"disabled-tag\">Referral Lost</span>' : ''}</div>
+          <div class="choice-btn ${data.referrer==='away'?'selected':''} ${awayLost?'choice-disabled':''}" ${awayLost ? '' : 'data-action="set-referrer" data-value="away"'}>${esc(state.game.away) || 'Away'}${awayLost ? '<br><span class=\"disabled-tag\">Referral Lost</span>' : ''}</div>
+        </div>
+        <div style="margin-top:10px;">
+          <div class="choice-btn ${data.type==='umpire'?'selected':''}" data-action="set-type-umpire">Umpire Referral</div>
+        </div>
+      `;
+    }
+    if(stepKey === 'when'){
+      return `
+        ${eyebrow}
+        <p class="step-script">When did this occur?</p>
+        <div class="choice-grid">
+          ${QUARTER_OPTIONS.map(q=>`<div class="choice-btn ${data.quarter===q?'selected':''}" data-action="set-quarter" data-value="${q}">${q}</div>`).join('')}
+        </div>
+        <div style="margin-top:12px;">
+          <label style="display:block; font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:5px;">Game Clock (optional)</label>
+          <input type="text" inputmode="numeric" pattern="[0-9:]*" id="wz-clocktime" placeholder="e.g. 1234" value="${esc(data.clockTime)}">
+        </div>
+      `;
+    }
+    if(stepKey === 'question'){
+      return `
+        ${eyebrow}
+        <p class="step-script">&ldquo;Ok, looking for&hellip;&rdquo; (state the question)</p>
+        <textarea id="wz-question" placeholder="What are you checking for?">${esc(data.question)}</textarea>
+      `;
+    }
+    if(stepKey === 'situation'){
+      return `
+        ${eyebrow}
+        <p class="step-script">An umpire referral can only be for:</p>
+        <div class="choice-grid single">
+          ${UMPIRE_SITUATIONS.map(o=>`
+            <div class="choice-btn ${data.question===o?'selected':''}" data-action="set-situation" data-value="${esc(o)}">${esc(o)}</div>
+          `).join('')}
+        </div>
+      `;
+    }
+    if(stepKey === 'onfield'){
+      return `
+        ${eyebrow}
+        <p class="step-script">On-field decision</p>
+        <input type="text" id="wz-onfield" placeholder="e.g. PC awarded, Goal disallowed" value="${esc(data.onFieldDecision)}">
+      `;
+    }
+    if(stepKey === 'vufinding'){
+      return `
+        ${eyebrow}
+        <p class="step-script">VU Finding &mdash; what did the review show?</p>
+        <textarea id="wz-vufinding" placeholder="What did you see on review?">${esc(data.vuFinding)}</textarea>
+      `;
+    }
+    if(stepKey === 'decision'){
+      return `
+        ${eyebrow}
+        <p class="step-script">&lt;&lt;&lt; Check the whole play &gt;&gt;&gt;</p>
+        <div class="choice-grid single">
+          ${DECISION_OPTIONS.map(o=>`
+            <div class="choice-btn ${o.cls} ${data.decision===o.key?'selected':''}" data-action="set-decision" data-value="${o.key}">${o.label}</div>
+          `).join('')}
+        </div>
+      `;
+    }
+    if(stepKey === 'restart'){
+      return `
+        ${eyebrow}
+        <p class="step-script">Restart with a&hellip;</p>
+        <div class="choice-grid">
+          ${RESTART_OPTIONS.map(o=>`<div class="choice-btn ${data.restart===o?'selected':''}" data-action="set-restart" data-value="${esc(o)}">${esc(o)}</div>`).join('')}
+        </div>
+        ${data.restart === 'Other' ? `
+          <div style="margin-top:10px;">
+            <input type="text" id="wz-restart-other" placeholder="Specify restart" value="${esc(data.restartOther)}">
+          </div>
+        ` : ''}
+      `;
+    }
+    if(stepKey === 'keeplose'){
+      return `
+        ${eyebrow}
+        <p class="step-script">Team keep / lose their referral</p>
+        <div class="choice-grid">
+          <div class="choice-btn opt-green ${data.keepLose==='keep'?'selected':''}" data-action="set-keeplose" data-value="keep">KEEP</div>
+          <div class="choice-btn opt-red ${data.keepLose==='lose'?'selected':''}" data-action="set-keeplose" data-value="lose">LOSE</div>
+        </div>
+      `;
+    }
+    if(stepKey === 'penalty'){
+      return `
+        ${eyebrow}
+        <p class="step-script">Personal penalty &mdash; optional (e.g. serious misconduct)</p>
+        <div class="choice-grid single">
+          ${PENALTY_OPTIONS.map(o=>`
+            <div class="choice-btn ${o.cls} ${data.penalty===o.key?'selected':''}" data-action="set-penalty" data-value="${o.key}">${o.label}</div>
+          `).join('')}
+        </div>
+      `;
+    }
+    if(stepKey === 'script'){
+      const scriptText = buildScript(data);
+      return `
+        ${eyebrow}
+        <p class="step-script">Read this to the pitch, word for word</p>
+        <div class="script-readout">&ldquo;${esc(scriptText)}&rdquo;</div>
+        <p class="step-script" style="margin-top:16px;">After the on-field umpire makes their final call</p>
+        <div class="choice-grid">
+          <div class="choice-btn opt-green ${data.tookAdvice===true?'selected':''}" data-action="set-took-advice" data-value="yes">Yes, took VU advice</div>
+          <div class="choice-btn opt-red ${data.tookAdvice===false?'selected':''}" data-action="set-took-advice" data-value="no">No, own decision</div>
+        </div>
+      `;
+    }
+    return '';
+  }
+
+  // ---------- Event handling ----------
+  function attachHandlers(){
+    app.querySelectorAll('[data-action]').forEach(el=>{
+      el.addEventListener('click', onAction);
+    });
+    const supEmail = document.getElementById('supervisorEmail');
+    if(supEmail) supEmail.addEventListener('change', e=>{ state.settings.supervisorEmail = e.target.value; saveSettings(); });
+
+    const customInput = document.getElementById('customTeamInput');
+    if(customInput) customInput.addEventListener('keydown', e=>{ if(e.key==='Enter'){ addCustomTeam(); }});
+
+    const homeSel = document.getElementById('homeTeam');
+    if(homeSel) homeSel.addEventListener('change', e=>{ state.game.home = e.target.value; state.game.referralStatus.home = false; render(); });
+    const awaySel = document.getElementById('awayTeam');
+    if(awaySel) awaySel.addEventListener('change', e=>{ state.game.away = e.target.value; state.game.referralStatus.away = false; render(); });
+    const homeText = document.getElementById('homeTeamText');
+    if(homeText) homeText.addEventListener('input', e=>{ state.game.home = e.target.value; });
+    const awayText = document.getElementById('awayTeamText');
+    if(awayText) awayText.addEventListener('input', e=>{ state.game.away = e.target.value; });
+    const labelInput = document.getElementById('gameLabel');
+    if(labelInput) labelInput.addEventListener('change', e=>{ state.game.label = e.target.value; });
+    const dateInput = document.getElementById('gameDate');
+    if(dateInput) dateInput.addEventListener('change', e=>{ state.game.date = e.target.value; });
+
+    const wzQuestion = document.getElementById('wz-question');
+    if(wzQuestion) wzQuestion.addEventListener('input', e=>{ state.wizard.data.question = e.target.value; });
+    const wzOnfield = document.getElementById('wz-onfield');
+    if(wzOnfield) wzOnfield.addEventListener('input', e=>{ state.wizard.data.onFieldDecision = e.target.value; });
+    const wzVuFinding = document.getElementById('wz-vufinding');
+    if(wzVuFinding) wzVuFinding.addEventListener('input', e=>{ state.wizard.data.vuFinding = e.target.value; });
+    const wzRestartOther = document.getElementById('wz-restart-other');
+    if(wzRestartOther) wzRestartOther.addEventListener('input', e=>{ state.wizard.data.restartOther = e.target.value; });
+    const wzClockTime = document.getElementById('wz-clocktime');
+    if(wzClockTime) wzClockTime.addEventListener('input', e=>{
+      const digits = e.target.value.replace(/[^0-9]/g,'').slice(0,4);
+      const formatted = digits.length > 2 ? digits.slice(0, digits.length-2) + ':' + digits.slice(-2) : digits;
+      e.target.value = formatted;
+      state.wizard.data.clockTime = formatted;
+    });
+  }
+
+  function addCustomTeam(){
+    const input = document.getElementById('customTeamInput');
+    const val = input.value.trim();
+    if(!val) return;
+    state.settings.customTeams.push(val);
+    saveSettings();
+    input.value = '';
+    render();
+  }
+
+  function onAction(e){
+    const el = e.currentTarget;
+    const action = el.dataset.action;
+
+    if(action === 'set-scope'){
+      const side = el.dataset.side;
+      const val = el.dataset.value;
+      const scopeKey = side + 'Scope';
+      if(state.game[scopeKey] !== val){
+        state.game[scopeKey] = val;
+        state.game[side] = '';
+        state.game.referralStatus[side] = false;
+      }
+      render(); return;
+    }
+    if(action === 'reset-shootout'){
+      if(confirm('Shootout reached: give each team one referral for the shootout, regardless of regulation status?')){
+        state.game.referralStatus = { home:false, away:false };
+        render();
+      }
+      return;
+    }
+    if(action === 'toggle-settings'){ state.settingsOpen = !state.settingsOpen; render(); return; }
+    if(action === 'add-team'){ addCustomTeam(); return; }
+    if(action === 'remove-team'){
+      const idx = parseInt(el.dataset.index,10);
+      state.settings.customTeams.splice(idx,1);
+      saveSettings(); render(); return;
+    }
+    if(action === 'start-wizard'){
+      state.wizard = { step:0, data:newWizardData() };
+      render(); return;
+    }
+    if(action === 'overlay-bg'){
+      // clicking backdrop cancels
+      state.wizard = null; render(); return;
+    }
+    if(action === 'wizard-cancel'){ state.wizard = null; render(); return; }
+    if(action === 'wizard-back'){
+      state.wizard.step = Math.max(0, state.wizard.step - 1);
+      render(); return;
+    }
+    if(action === 'set-referrer'){
+      state.wizard.data.referrer = el.dataset.value;
+      state.wizard.data.type = 'team';
+      render(); return;
+    }
+    if(action === 'set-type-umpire'){
+      state.wizard.data.type = 'umpire';
+      state.wizard.data.referrer = '';
+      render(); return;
+    }
+    if(action === 'set-situation'){ state.wizard.data.question = el.dataset.value; render(); return; }
+    if(action === 'set-quarter'){ state.wizard.data.quarter = el.dataset.value; render(); return; }
+    if(action === 'set-decision'){ state.wizard.data.decision = el.dataset.value; render(); return; }
+    if(action === 'set-restart'){ state.wizard.data.restart = el.dataset.value; render(); return; }
+    if(action === 'set-penalty'){ state.wizard.data.penalty = el.dataset.value; render(); return; }
+    if(action === 'set-keeplose'){ state.wizard.data.keepLose = el.dataset.value; render(); return; }
+    if(action === 'set-took-advice'){ state.wizard.data.tookAdvice = (el.dataset.value === 'yes'); render(); return; }
+
+    if(action === 'wizard-next'){
+      const steps = wizardSteps(state.wizard.data);
+      const isLast = state.wizard.step === steps.length - 1;
+      if(isLast){
+        finalizeEntry();
+      } else {
+        state.wizard.step += 1;
+        render();
+      }
+      return;
+    }
+
+    if(action === 'delete-entry'){
+      const idx = parseInt(el.dataset.index,10);
+      state.entries.splice(idx,1);
+      render(); return;
+    }
+    if(action === 'clear-log'){
+      if(confirm('Clear all logged referrals for this game?')){
+        state.entries = [];
+        state.game.referralStatus = { home:false, away:false };
+        render();
+      }
+      return;
+    }
+    if(action === 'email-log'){ emailLog(); return; }
+  }
+
+  function finalizeEntry(){
+    const d = state.wizard.data;
+    if(d.restart === 'Other' && d.restartOther){ d.restart = d.restartOther; }
+    if(d.type === 'team' && d.keepLose === 'lose' && d.referrer){
+      state.game.referralStatus[d.referrer] = true;
+    }
+    const scriptText = buildScript(d);
+    state.entries.push(Object.assign({}, d, { scriptText, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) }));
+    state.wizard = null;
+    render();
+  }
+
+  function emailLog(){
+    if(!state.settings.supervisorEmail){
+      state.settingsOpen = true;
+      render();
+      alert('Add the supervisor / umpire manager email in Settings first.');
+      return;
+    }
+    const home = state.game.home || 'Home';
+    const away = state.game.away || 'Away';
+    const subject = `VU Log: ${home} vs ${away} - ${state.game.date}`;
+    let body = `Video Umpire Referral Log\n`;
+    body += `${home} vs ${away}\n`;
+    if(state.game.label) body += `${state.game.label}\n`;
+    body += `Date: ${state.game.date}\n`;
+    body += `\n----------------------------\n\n`;
+
+    if(!state.entries.length){
+      body += `No referrals logged.\n`;
+    } else {
+      state.entries.forEach((e, i)=>{
+        const who = e.type==='umpire' ? 'Umpire Referral' : `${e.referrer==='home'?home:away} Referral`;
+        const outcome = DECISION_OPTIONS.find(o=>o.key===e.decision);
+        body += `${i+1}. ${who} (${e.time})\n`;
+        if(e.quarter) body += `   When: ${e.quarter}${e.clockTime ? ' - ' + e.clockTime : ''}\n`;
+        body += `   Question: ${e.question || '-'}\n`;
+        if(e.onFieldDecision) body += `   On-field decision: ${e.onFieldDecision}\n`;
+        if(e.vuFinding) body += `   VU Finding: ${e.vuFinding}\n`;
+        body += `   Outcome: ${outcome ? outcome.label : '-'}\n`;
+        body += `   Restart: ${e.restart || '-'}\n`;
+        if(e.penalty && e.penalty !== 'none') body += `   Personal penalty: ${e.penalty === 'yellow' ? 'Yellow Card (10 min)' : 'Red Card'}\n`;
+        if(e.type==='team') body += `   Result: Team ${e.keepLose === 'keep' ? 'KEEPS' : e.keepLose === 'lose' ? 'LOSES' : '-'} referral\n`;
+        if(e.scriptText) body += `   Read to pitch: "${e.scriptText}"\n`;
+        if(e.tookAdvice !== null && e.tookAdvice !== undefined) body += `   Umpire follow-through: ${e.tookAdvice ? 'Took VU advice' : 'Made own decision'}\n`;
+        body += `\n`;
+      });
+    }
+
+    const mailto = `mailto:${encodeURIComponent(state.settings.supervisorEmail)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+  }
+
+  loadSettings();
+})();
+</script>
+</body>
+</html>
