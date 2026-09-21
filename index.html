@@ -70,6 +70,16 @@
   .drilldown-select{margin-bottom:8px; display:block;}
   .drilldown-note{font-size:12px; color:var(--text-muted); font-style:italic; margin-bottom:8px;}
   .field-hint{font-size:11px; color:var(--text-dim); margin-top:5px;}
+  .discretion-toggle{
+    display:flex; align-items:center; gap:10px; margin-top:14px; padding:10px 12px;
+    background:var(--bg-panel-3); border:1px solid var(--border); border-radius:10px; cursor:pointer;
+  }
+  .discretion-checkbox{
+    flex-shrink:0; width:22px; height:22px; border-radius:5px; border:2px solid var(--border);
+    display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; color:#F3E98F;
+  }
+  .discretion-checkbox.checked{border-color:var(--accent-yellow); background:var(--accent-yellow-dim);}
+  .discretion-label{font-size:13px; color:var(--text-primary); font-weight:600;}
   .field{flex:1; min-width:140px;}
   .field label{display:block; font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:5px;}
   select, input[type=text], input[type=email], textarea{
@@ -522,6 +532,7 @@
             ${e.vuFinding ? `VU Finding: ${esc(e.vuFinding)}<br>` : ''}
             Restart: ${esc(e.restart) || '&mdash;'}
             ${e.penalty && e.penalty !== 'none' ? `<br>Personal penalty: <strong>${e.penalty === 'yellow' ? 'Yellow Card (10 min)' : 'Red Card'}</strong>` : ''}
+            ${e.discretionPenalty ? `<br>Possible personal penalty flagged${e.discretionPenaltyNumber ? ` &mdash; player #${esc(e.discretionPenaltyNumber)}` : ''} (umpire's discretion)` : ''}
             ${e.type==='team' ? `<br>Result: <strong>${e.keepLose === 'keep' ? 'Team KEEPS referral' : e.keepLose === 'lose' ? 'Team LOSES referral' : '&mdash;'}</strong>` : ''}
           </div>
           ${outcome ? `<span class="entry-outcome ${outcomeCls}">${outcome.label}</span>` : ''}
@@ -552,16 +563,20 @@
 
   // ---------- Wizard ----------
   function newWizardData(){
-    return { type:'', referrer:'', quarter:'', clockTime:'', question:'', onFieldDecision:'', vuFinding:'', decision:'', restart:'', restartOther:'', penalty:'none', keepLose:'', tookAdvice:null };
+    return { type:'', referrer:'', quarter:'', clockTime:'', question:'', onFieldDecision:'', vuFinding:'', decision:'', restart:'', restartOther:'', penalty:'none', discretionPenalty:false, discretionPenaltyNumber:'', keepLose:'', tookAdvice:null };
   }
 
   function wizardSteps(data){
     // Steps depend on whether it's a team or umpire referral
     const steps = ['type'];
     if(data.type === 'team'){
-      steps.push('when','question','onfield','vufinding','decision','restart','penalty','keeplose','script');
+      steps.push('when','question','onfield','vufinding','decision','restart','keeplose','script');
     } else if(data.type === 'umpire'){
-      steps.push('when','situation','vufinding','decision','restart','penalty','script');
+      steps.push('when','situation','vufinding','decision','restart');
+      if(data.question === 'Serious Misconduct'){
+        steps.push('penalty');
+      }
+      steps.push('script');
     }
     return steps;
   }
@@ -593,8 +608,16 @@
     }
 
     if(data.restart){
-      const restartPhrase = data.restart === 'Goal' ? 'at midfield with a free push' : `a ${data.restart}`;
-      parts.push(`Restart is ${restartPhrase}.`);
+      if(data.discretionPenalty){
+        const restartClause = data.restart === 'Goal' ? 'you may restart at midfield with a free push' : `you may restart with a ${data.restart}`;
+        const numberPart = data.discretionPenaltyNumber ? ` to player #${data.discretionPenaltyNumber}` : '';
+        const sentence = `${restartClause}, and award a personal penalty${numberPart}.`;
+        parts.push(sentence.charAt(0).toUpperCase() + sentence.slice(1));
+        parts.push(`It is the on-field umpire's discretion as to whether it is a green, yellow (5 or 10 minute), or red card.`);
+      } else {
+        const restartPhrase = data.restart === 'Goal' ? 'at midfield with a free push' : `a ${data.restart}`;
+        parts.push(`Restart is ${restartPhrase}.`);
+      }
     }
 
     if(data.type === 'team'){
@@ -733,6 +756,16 @@
             <input type="text" id="wz-restart-other" placeholder="Specify restart" value="${esc(data.restartOther)}">
           </div>
         ` : ''}
+        <div class="discretion-toggle" data-action="toggle-discretion-penalty">
+          <div class="discretion-checkbox ${data.discretionPenalty?'checked':''}">${data.discretionPenalty ? '&#10003;' : ''}</div>
+          <div class="discretion-label">Flag possible personal penalty &mdash; on-field umpire's discretion</div>
+        </div>
+        ${data.discretionPenalty ? `
+          <div style="margin-top:10px;">
+            <label style="display:block; font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:5px;">Player / Shirt # (optional)</label>
+            <input type="text" inputmode="numeric" pattern="[0-9]*" id="wz-discretion-number" placeholder="e.g. 7" value="${esc(data.discretionPenaltyNumber)}">
+          </div>
+        ` : ''}
       `;
     }
     if(stepKey === 'keeplose'){
@@ -821,6 +854,12 @@
     if(wzVuFinding) wzVuFinding.addEventListener('input', e=>{ state.wizard.data.vuFinding = e.target.value; });
     const wzRestartOther = document.getElementById('wz-restart-other');
     if(wzRestartOther) wzRestartOther.addEventListener('input', e=>{ state.wizard.data.restartOther = e.target.value; });
+    const wzDiscretionNumber = document.getElementById('wz-discretion-number');
+    if(wzDiscretionNumber) wzDiscretionNumber.addEventListener('input', e=>{
+      const digits = e.target.value.replace(/[^0-9]/g,'');
+      if(digits !== e.target.value) e.target.value = digits;
+      state.wizard.data.discretionPenaltyNumber = digits;
+    });
     const wzClockTime = document.getElementById('wz-clocktime');
     if(wzClockTime) wzClockTime.addEventListener('input', e=>{
       const digits = e.target.value.replace(/[^0-9]/g,'').slice(0,4);
@@ -898,6 +937,11 @@
     if(action === 'set-quarter'){ state.wizard.data.quarter = el.dataset.value; render(); return; }
     if(action === 'set-decision'){ state.wizard.data.decision = el.dataset.value; render(); return; }
     if(action === 'set-restart'){ state.wizard.data.restart = el.dataset.value; render(); return; }
+    if(action === 'toggle-discretion-penalty'){
+      state.wizard.data.discretionPenalty = !state.wizard.data.discretionPenalty;
+      if(!state.wizard.data.discretionPenalty){ state.wizard.data.discretionPenaltyNumber = ''; }
+      render(); return;
+    }
     if(action === 'set-penalty'){ state.wizard.data.penalty = el.dataset.value; render(); return; }
     if(action === 'set-keeplose'){ state.wizard.data.keepLose = el.dataset.value; render(); return; }
     if(action === 'set-took-advice'){ state.wizard.data.tookAdvice = (el.dataset.value === 'yes'); render(); return; }
@@ -972,6 +1016,7 @@
         body += `   Outcome: ${outcome ? outcome.label : '-'}\n`;
         body += `   Restart: ${e.restart || '-'}\n`;
         if(e.penalty && e.penalty !== 'none') body += `   Personal penalty: ${e.penalty === 'yellow' ? 'Yellow Card (10 min)' : 'Red Card'}\n`;
+        if(e.discretionPenalty) body += `   Possible personal penalty flagged${e.discretionPenaltyNumber ? ` - player #${e.discretionPenaltyNumber}` : ''} (umpire's discretion: green/yellow/red)\n`;
         if(e.type==='team') body += `   Result: Team ${e.keepLose === 'keep' ? 'KEEPS' : e.keepLose === 'lose' ? 'LOSES' : '-'} referral\n`;
         if(e.scriptText) body += `   Read to pitch: "${e.scriptText}"\n`;
         if(e.tookAdvice !== null && e.tookAdvice !== undefined) body += `   Umpire follow-through: ${e.tookAdvice ? 'Took VU advice' : 'Made own decision'}\n`;
