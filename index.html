@@ -532,7 +532,7 @@
             ${e.vuFinding ? `VU Finding: ${esc(e.vuFinding)}<br>` : ''}
             Restart: ${esc(e.restart) || '&mdash;'}
             ${e.penalty && e.penalty !== 'none' ? `<br>Personal penalty: <strong>${e.penalty === 'yellow' ? 'Yellow Card (10 min)' : 'Red Card'}</strong>` : ''}
-            ${e.discretionPenalty ? `<br>Possible personal penalty flagged${e.discretionPenaltyNumber ? ` &mdash; player #${esc(e.discretionPenaltyNumber)}` : ''} (umpire's discretion)` : ''}
+            ${e.discretionPenalty ? `<br>Possible personal penalty flagged${e.discretionPenaltyNumber ? ` &mdash; #${esc(e.discretionPenaltyNumber)}` : ''}` : ''}
             ${e.type==='team' ? `<br>Result: <strong>${e.keepLose === 'keep' ? 'Team KEEPS referral' : e.keepLose === 'lose' ? 'Team LOSES referral' : '&mdash;'}</strong>` : ''}
           </div>
           ${outcome ? `<span class="entry-outcome ${outcomeCls}">${outcome.label}</span>` : ''}
@@ -610,10 +610,9 @@
     if(data.restart){
       if(data.discretionPenalty){
         const restartClause = data.restart === 'Goal' ? 'you may restart at midfield with a free push' : `you may restart with a ${data.restart}`;
-        const numberPart = data.discretionPenaltyNumber ? ` to player #${data.discretionPenaltyNumber}` : '';
-        const sentence = `${restartClause}, and award a personal penalty${numberPart}.`;
+        const numberPart = data.discretionPenaltyNumber ? ` #${data.discretionPenaltyNumber}` : '';
+        const sentence = `${restartClause}, and you may award a personal penalty${numberPart}.`;
         parts.push(sentence.charAt(0).toUpperCase() + sentence.slice(1));
-        parts.push(`It is the on-field umpire's discretion as to whether it is a green, yellow (5 or 10 minute), or red card.`);
       } else {
         const restartPhrase = data.restart === 'Goal' ? 'at midfield with a free push' : `a ${data.restart}`;
         parts.push(`Restart is ${restartPhrase}.`);
@@ -1016,7 +1015,7 @@
         body += `   Outcome: ${outcome ? outcome.label : '-'}\n`;
         body += `   Restart: ${e.restart || '-'}\n`;
         if(e.penalty && e.penalty !== 'none') body += `   Personal penalty: ${e.penalty === 'yellow' ? 'Yellow Card (10 min)' : 'Red Card'}\n`;
-        if(e.discretionPenalty) body += `   Possible personal penalty flagged${e.discretionPenaltyNumber ? ` - player #${e.discretionPenaltyNumber}` : ''} (umpire's discretion: green/yellow/red)\n`;
+        if(e.discretionPenalty) body += `   Possible personal penalty flagged${e.discretionPenaltyNumber ? ` - #${e.discretionPenaltyNumber}` : ''}\n`;
         if(e.type==='team') body += `   Result: Team ${e.keepLose === 'keep' ? 'KEEPS' : e.keepLose === 'lose' ? 'LOSES' : '-'} referral\n`;
         if(e.scriptText) body += `   Read to pitch: "${e.scriptText}"\n`;
         if(e.tookAdvice !== null && e.tookAdvice !== undefined) body += `   Umpire follow-through: ${e.tookAdvice ? 'Took VU advice' : 'Made own decision'}\n`;
